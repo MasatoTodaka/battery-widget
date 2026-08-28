@@ -19,6 +19,11 @@ public sealed class BatteryDeviceViewModel(BatteryDevice device)
 
     public string PercentageText => Percentage is { } value ? $"{value}%" : "--";
 
+    public int? Dpi { get; } = device.Dpi;
+
+    /// <summary>Empty for non-mouse devices, or mice G HUB didn't report a DPI for.</summary>
+    public string DpiText => Dpi is { } dpi ? $"{dpi} DPI" : string.Empty;
+
     public string Glyph => device.Kind switch
     {
         BatteryDeviceKind.Mouse => "\U0001F5B1",

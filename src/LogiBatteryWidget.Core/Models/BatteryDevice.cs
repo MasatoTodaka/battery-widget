@@ -11,7 +11,8 @@ public sealed record BatteryDevice(
     string Name,
     BatteryDeviceKind Kind,
     int? Percentage,
-    bool IsCharging)
+    bool IsCharging,
+    int? Dpi = null)
 {
     /// <summary>Globally unique key across all providers, used for de-duplication and UI list identity.</summary>
     public string Key => $"{Source}:{Id}";

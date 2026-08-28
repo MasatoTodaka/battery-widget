@@ -65,13 +65,18 @@ public sealed class GHubBatteryProvider : IBatteryProvider
                     continue;
                 }
 
+                var dpi = device.Kind == BatteryDeviceKind.Mouse
+                    ? await RequestDpiAsync(socket, device.Id, cancellationToken).ConfigureAwait(false)
+                    : null;
+
                 results.Add(new BatteryDevice(
                     Id: device.Id,
                     Source: SourceName,
                     Name: device.Name,
                     Kind: device.Kind,
                     Percentage: reading.Value.Percentage,
-                    IsCharging: reading.Value.IsCharging));
+                    IsCharging: reading.Value.IsCharging,
+                    Dpi: dpi));
             }
 
             return results;
@@ -141,6 +146,22 @@ public sealed class GHubBatteryProvider : IBatteryProvider
         var percentage = TryGetPercentage(payload);
         var charging = TryGetBool(payload, "charging", "isCharging") ?? false;
         return new GHubBatteryReading(percentage, charging);
+    }
+
+    private static async Task<int?> RequestDpiAsync(
+        ClientWebSocket socket, string deviceId, CancellationToken cancellationToken)
+    {
+        // Only mice support this endpoint; keyboards/headsets reply NO_SUCH_PATH, which IsSuccess
+        // correctly treats as "nothing to report" rather than an error.
+        var response = await SendRequestAsync(socket, $"/mouse/{deviceId}/dpi", cancellationToken).ConfigureAwait(false);
+        if (response is null || !IsSuccess(response.Value) || !response.Value.TryGetProperty("payload", out var payload))
+        {
+            return null;
+        }
+
+        return payload.TryGetProperty("dpi", out var dpiValue) && dpiValue.ValueKind == JsonValueKind.Number
+            ? dpiValue.GetInt32()
+            : null;
     }
 
     private static async Task<JsonElement?> SendRequestAsync(
