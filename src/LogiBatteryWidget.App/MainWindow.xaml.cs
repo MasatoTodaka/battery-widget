@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using LogiBatteryWidget.App.Settings;
 using LogiBatteryWidget.App.ViewModels;
 
@@ -16,8 +17,18 @@ public partial class MainWindow : Window
     private const int DwmwaWindowCornerPreference = 33;
     private const int DwmwcpRound = 2;
 
+    private static readonly IntPtr HwndBottom = new(1);
+    private const uint SwpNoMove = 0x0002;
+    private const uint SwpNoSize = 0x0001;
+    private const uint SwpNoActivate = 0x0010;
+
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int valueSize);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
+
+    private readonly DispatcherTimer _keepAtBottomTimer;
 
     public MainWindow(MainViewModel viewModel)
     {
@@ -40,6 +51,17 @@ public partial class MainWindow : Window
                 Top = workArea.Top + 24;
             };
         }
+
+        // Not Topmost: any window the user opens or clicks into should cover the widget, like a
+        // desktop icon. Windows still raises a window's z-order on click/activation though, so a
+        // light periodic nudge back to the bottom is needed to keep it from staying on top after
+        // you interact with it (e.g. dragging it).
+        _keepAtBottomTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1.5),
+        };
+        _keepAtBottomTimer.Tick += (_, _) => SendToBottom();
+        _keepAtBottomTimer.Start();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -56,6 +78,17 @@ public partial class MainWindow : Window
         {
             // Pre-Windows 11: no native corner rounding API. The window just stays square-cornered.
         }
+
+        SendToBottom();
+    }
+
+    private void SendToBottom()
+    {
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd != IntPtr.Zero)
+        {
+            SetWindowPos(hwnd, HwndBottom, 0, 0, 0, 0, SwpNoMove | SwpNoSize | SwpNoActivate);
+        }
     }
 
     private void Card_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -67,5 +100,6 @@ public partial class MainWindow : Window
 
         DragMove();
         WidgetPositionStore.Save(new WidgetPosition(Left, Top));
+        SendToBottom();
     }
 }

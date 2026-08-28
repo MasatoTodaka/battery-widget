@@ -13,7 +13,6 @@
         SizeToContent="Height"
         WindowStyle="None"
         Background="#FF1C1C1E"
-        Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         WindowStartupLocation="Manual"
