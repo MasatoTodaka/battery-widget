@@ -68,7 +68,7 @@ public partial class App : Application
         var icon = new TaskbarIcon
         {
             Icon = TrayIconFactory.CreateBatteryIcon(),
-            ToolTipText = "Logi Battery Widget",
+            ToolTipText = "Battery Widget",
             ContextMenu = contextMenu,
         };
         icon.TrayMouseDoubleClick += (_, _) => ToggleWidgetVisibility();

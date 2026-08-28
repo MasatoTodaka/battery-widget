@@ -1,4 +1,4 @@
-# Logi Battery Widget
+# Battery Widget
 
 Windows常駐のデスクトップウィジェット。iOS/macOSのバッテリーウィジェット風の見た目で、
 接続中の周辺機器(マウス・キーボード・ヘッドセットなど)のバッテリー残量を表示する。
@@ -57,7 +57,29 @@ Bluetoothで接続していれば`WindowsBatteryProvider`経由で拾える可�
 バッテリーを表示したい場合は、各社ソフトウェアの追加リバースエンジニアリングが必要になる
 (`IBatteryProvider`を実装して`App.xaml.cs`のprovidersリストに追加すれば統合できる設計)。
 
-## 実行方法
+## インストール(配布用)
+
+人に渡すとき・自分の別PCに入れるときは、`dist/BatteryWidgetSetup.exe` を1つ渡すだけでよい。
+ダブルクリックすると通常のインストーラーウィザードが立ち上がり(管理者権限は不要——
+ユーザーごとのインストールなのでUACプロンプトも出ない)、完了後は自動的に起動する。
+Windows起動時の自動起動・デスクトップアイコン作成もインストーラーの画面で選べる。
+アンインストールは通常のWindowsの「アプリと機能」から行える。
+
+このインストーラーは自己完結型ビルド(.NETランタイムを内蔵)なので、相手のPCに.NETが
+入っていなくてもそのまま動く。
+
+インストーラー自体を作り直す(コード変更後など)には:
+
+```
+dotnet publish src/LogiBatteryWidget.App/LogiBatteryWidget.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+"C:\Users\<user>\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\BatteryWidget.iss
+```
+
+`dist\BatteryWidgetSetup.exe` が生成される(`publish/`・`dist/`とも`.gitignore`済みで
+リポジトリには含めない——インストーラーのソースである`installer/BatteryWidget.iss`だけを
+バージョン管理している)。
+
+## 開発時の実行方法
 
 ```
 dotnet run --project src/LogiBatteryWidget.App/LogiBatteryWidget.App.csproj

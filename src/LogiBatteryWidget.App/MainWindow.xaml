@@ -8,7 +8,7 @@
         xmlns:conv="clr-namespace:LogiBatteryWidget.App.Converters"
         xmlns:controls="clr-namespace:LogiBatteryWidget.App.Controls"
         mc:Ignorable="d"
-        Title="Logi Battery Widget"
+        Title="Battery Widget"
         Width="260"
         SizeToContent="Height"
         WindowStyle="None"
