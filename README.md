@@ -1,4 +1,4 @@
-# Logi Battery Widget
+#Battery Widget
 
 Windows常駐のデスクトップウィジェット。iOS/macOSのバッテリーウィジェット風の見た目で、
 接続中の周辺機器(マウス・キーボード・ヘッドセットなど)のバッテリー残量を表示する。
