@@ -19,11 +19,20 @@ Windows常駐のデスクトップウィジェット。iOS/macOSのバッテリ�
   (`Windows.Devices.Power.Battery`)を列挙する。ベンダー非依存だが、**Bluetoothの標準
   Battery Serviceで接続されているデバイスのみ**が対象。Logicool LightspeedやPulsar/Vaxee/
   ZOWIEなど独自2.4GHzドングル経由の接続はWindows自体がバッテリー情報を持たないため拾えない。
+- `InzoneBatteryProvider` — Sony INZONEのUSBドングル(INZONE Buds等)のHIDコントロールチャネル
+  (vendor `0x054C`, usage page `0xFF04`, 64バイトレポート)に直接コマンドを送ってバッテリーを
+  読む。INZONE Hubのインストールは不要(HIDデバイスは複数ハンドルから同時オープン可能なため、
+  INZONE Hubが動いていても共存できる)。プロトコルはSonyの公式ドキュメントがなく、コミュニティの
+  リバースエンジニアリング成果([penguinwokrs/openinzone](https://github.com/penguinwokrs/openinzone)
+  の`docs/PROTOCOL.md`、GPL-3.0)に書かれた仕様を元に独自実装したもの(コードのコピーではない)。
+  **このリポジトリの開発機にはINZONEデバイスが接続できず、実機未検証。** パケット組み立て/解析は
+  `LogiBatteryWidget.Core/Providers/Inzone/InzoneHciPacket.cs`、デバイス列挙は
+  `InzoneHidLocator.cs` を参照。実機で値がおかしい場合はまずこの2ファイルを疑うこと。
 
-### 既知の制約: Logicool以外のベンダー
+### 既知の制約: Logicool・INZONE以外のベンダー
 
-Pulsar / Vaxee / INZONE(Sony) / ZOWIE(BenQ) は、それぞれの純正ドングルで接続している場合、
-G HUBのような読み取り可能なローカルAPIが公開されておらず(調査時点で確認できず)、
+Pulsar / Vaxee / ZOWIE(BenQ) は、それぞれの純正ドングルで接続している場合、G HUBやINZONEの
+ような読み取り可能なローカルAPI/HIDプロトコルの情報が見つからず(調査時点で確認できず)、
 `WindowsBatteryProvider` にも掛からない。これらのデバイスをBluetoothで接続していれば
 `WindowsBatteryProvider` 経由で拾える可能性がある。ドングル接続のバッテリーを表示したい場合は、
 各社ソフトウェアの追加リバースエンジニアリングが必要になる(`IBatteryProvider` を実装して

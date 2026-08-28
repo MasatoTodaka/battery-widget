@@ -5,6 +5,7 @@ using LogiBatteryWidget.App.Settings;
 using LogiBatteryWidget.App.ViewModels;
 using LogiBatteryWidget.Core;
 using LogiBatteryWidget.Core.Providers;
+using LogiBatteryWidget.Core.Providers.Inzone;
 
 namespace LogiBatteryWidget.App;
 
@@ -22,6 +23,7 @@ public partial class App : Application
         [
             new GHubBatteryProvider(),
             new WindowsBatteryProvider(),
+            new InzoneBatteryProvider(),
         ];
 
         _monitor = new BatteryMonitorService(providers, TimeSpan.FromSeconds(45));
