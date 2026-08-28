@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using H.NotifyIcon;
@@ -13,6 +14,11 @@ namespace LogiBatteryWidget.App;
 
 public partial class App : Application
 {
+    // Same GUID as the installer's AppId - just reused as a convenient, already-unique constant
+    // for the single-instance lock name, not because it needs to match for any other reason.
+    private const string SingleInstanceMutexName = "BatteryWidget-SingleInstance-7C6E9C0F-3B0E-4C8A-9B7C-2C6B7B3B7B10";
+
+    private Mutex? _singleInstanceMutex;
     private BatteryMonitorService? _monitor;
     private TaskbarIcon? _taskbarIcon;
     private MainWindow? _mainWindow;
@@ -21,6 +27,20 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Without this, launching the exe a second time (autostart racing a desktop-icon click,
+        // clicking the Start Menu entry when it's already running, etc.) silently spins up a
+        // second fully independent widget/tray icon/pollers with no indication anything's wrong.
+        var mutex = new Mutex(initiallyOwned: true, SingleInstanceMutexName, out var createdNew);
+        if (!createdNew)
+        {
+            // Didn't acquire ownership (createdNew=false means it already existed), so releasing
+            // it would throw - just drop this handle and quit.
+            mutex.Dispose();
+            Shutdown();
+            return;
+        }
+        _singleInstanceMutex = mutex;
 
         IReadOnlyList<IBatteryProvider> providers =
         [
@@ -105,6 +125,15 @@ public partial class App : Application
     {
         _taskbarIcon?.Dispose();
         _monitor?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+
+        // Only release/dispose if this instance actually acquired it (the early-exit path for a
+        // second instance never took ownership, and releasing a mutex you don't own throws).
+        if (_singleInstanceMutex is not null)
+        {
+            _singleInstanceMutex.ReleaseMutex();
+            _singleInstanceMutex.Dispose();
+        }
+
         base.OnExit(e);
     }
 }

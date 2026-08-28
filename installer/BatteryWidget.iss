@@ -1,5 +1,5 @@
 #define MyAppName "Battery Widget"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "MasatoTodaka"
 #define MyAppURL "https://github.com/MasatoTodaka/battery-widget"
 #define MyAppExeName "BatteryWidget.App.exe"
