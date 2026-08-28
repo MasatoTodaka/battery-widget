@@ -59,7 +59,7 @@
                     <DataTemplate DataType="{x:Type vm:BatteryDeviceViewModel}">
                         <Grid Margin="2,8">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="44" />
+                                <ColumnDefinition Width="50" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
