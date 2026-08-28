@@ -8,21 +8,30 @@ namespace LogiBatteryWidget.Core.Providers;
 
 /// <summary>
 /// Reads battery status from Logitech G HUB's local, undocumented WebSocket API
-/// (ws://localhost:9010, exposed by lghub_agent.exe). This is the same interface used by
-/// community tools like LGSTrayBattery_GHUB - there is no official public API, so this client
-/// is intentionally defensive about field names and never throws when G HUB isn't running.
+/// (ws://localhost:9010, exposed by lghub_agent.exe). There is no official public API; this
+/// client's request/response shapes were confirmed against a real running G HUB instance
+/// (a PRO X SUPERLIGHT 2 mouse) - the handshake requires an "Origin: file://" header and a
+/// "json" subprotocol or lghub_agent rejects the connection with HTTP 400. Never throws when
+/// G HUB isn't running.
 /// </summary>
 public sealed class GHubBatteryProvider : IBatteryProvider
 {
     private static readonly Uri GHubWebSocketUri = new("ws://localhost:9010");
-    private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(1.5);
-    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(4);
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(3);
 
     public string SourceName => "Logitech G HUB";
 
     public async Task<IReadOnlyList<BatteryDevice>> GetDevicesAsync(CancellationToken cancellationToken)
     {
         using var socket = new ClientWebSocket();
+        // lghub_agent rejects the handshake (HTTP 400) unless it looks like it's coming from
+        // G HUB's own Electron frontend - confirmed against a real running instance.
+        socket.Options.SetRequestHeader("Origin", "file://");
+        socket.Options.SetRequestHeader("Pragma", "no-cache");
+        socket.Options.SetRequestHeader("Cache-Control", "no-cache");
+        socket.Options.AddSubProtocol("json");
+
         using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         connectCts.CancelAfter(ConnectTimeout);
 
@@ -124,7 +133,7 @@ public sealed class GHubBatteryProvider : IBatteryProvider
         ClientWebSocket socket, string deviceId, CancellationToken cancellationToken)
     {
         var response = await SendRequestAsync(socket, $"/battery/{deviceId}/state", cancellationToken).ConfigureAwait(false);
-        if (response is null || !response.Value.TryGetProperty("payload", out var payload))
+        if (response is null || !IsSuccess(response.Value) || !response.Value.TryGetProperty("payload", out var payload))
         {
             return null;
         }
@@ -140,7 +149,7 @@ public sealed class GHubBatteryProvider : IBatteryProvider
         using var requestCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         requestCts.CancelAfter(RequestTimeout);
 
-        var request = JsonSerializer.Serialize(new { path, verb = "GET" });
+        var request = JsonSerializer.Serialize(new { msgId = "", verb = "GET", path });
         var requestBytes = Encoding.UTF8.GetBytes(request);
         await socket.SendAsync(requestBytes, WebSocketMessageType.Text, endOfMessage: true, requestCts.Token)
             .ConfigureAwait(false);
@@ -211,8 +220,15 @@ public sealed class GHubBatteryProvider : IBatteryProvider
         return null;
     }
 
+    private static bool IsSuccess(JsonElement response) =>
+        response.TryGetProperty("result", out var result) &&
+        FirstString(result, "code") == "SUCCESS";
+
     private static int? TryGetPercentage(JsonElement payload)
     {
+        // Confirmed against a real G HUB instance: "percentage" is already 0-100 (e.g. 19, not
+        // 0.19). The other names are kept only as a fallback in case a future G HUB version
+        // renames the field.
         foreach (var name in new[] { "percentage", "batteryPercentage", "batteryLevel", "level" })
         {
             if (payload.ValueKind == JsonValueKind.Object &&
@@ -220,8 +236,7 @@ public sealed class GHubBatteryProvider : IBatteryProvider
                 value.ValueKind == JsonValueKind.Number &&
                 value.TryGetDouble(out var number))
             {
-                // Some firmwares report 0-1 fractions instead of 0-100.
-                return (int)Math.Round(number <= 1.0 ? number * 100 : number);
+                return (int)Math.Round(number);
             }
         }
         return null;

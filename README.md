@@ -12,10 +12,9 @@ Windows常駐のデスクトップウィジェット。iOS/macOSのバッテリ�
 
 - `GHubBatteryProvider` — Logicool G HUB (`lghub_agent.exe`) がローカルに立てる
   `ws://localhost:9010` の非公式WebSocket APIを叩く。G HUBが起動していないと単に0件を返す
-  (エラー扱いにしない)。フィールド名は公式ドキュメントがなく、コミュニティ製ツール
-  ([LGSTrayBattery_GHUB](https://github.com/andyvorld/LGSTrayBattery_GHUB) 等)の
-  リバースエンジニアリング情報を元にしている。実機のG HUBで応答JSONが想定と違う場合は
-  `GHubBatteryProvider` 内の `TryGetPercentage`/`TryGetBool` 周りを実データに合わせて調整する。
+  (エラー扱いにしない)。公式ドキュメントはないが、実機のG HUB(PRO X SUPERLIGHT 2使用)で
+  接続・デバイス一覧取得・バッテリー取得まで動作確認済み。ハンドシェイクに
+  `Origin: file://` ヘッダーと `json` サブプロトコルが必須(付けないとHTTP 400で拒否される)。
 - `WindowsBatteryProvider` — Windowsが標準で把握しているバッテリー付きデバイス
   (`Windows.Devices.Power.Battery`)を列挙する。ベンダー非依存だが、**Bluetoothの標準
   Battery Serviceで接続されているデバイスのみ**が対象。Logicool LightspeedやPulsar/Vaxee/
