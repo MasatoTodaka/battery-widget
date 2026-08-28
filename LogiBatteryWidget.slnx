@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LogiBatteryWidget.App/LogiBatteryWidget.App.csproj" />
+    <Project Path="src/LogiBatteryWidget.Core/LogiBatteryWidget.Core.csproj" />
+  </Folder>
+</Solution>
