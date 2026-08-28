@@ -38,14 +38,24 @@ Windows常駐のデスクトップウィジェット。iOS/macOSのバッテリ�
   この場合このプロバイダーは単に「今回は取得できなかった」として扱う——マウスを少し動かせば
   次のポーリングで復帰する。
 
+- `PulsarBatteryProvider` — Pulsarワイヤレスマウスのドングルの、こちらもHID**フィーチャー
+  レポート**コマンドチャネル(vendor `0x3710`, usage page `0xFFFF`, 65バイト)に直接コマンドを
+  送ってバッテリーを読む。コマンドバイト自体はMITライセンスの
+  [jonkristian/pulsar-x3-python](https://github.com/jonkristian/pulsar-x3-python)を参考にした
+  独自実装(そちらは生のlibusb制御転送で64バイトパケットを直接やり取りしているのに対し、
+  こちらはWindowsのHID API経由なので、Windows側が要求する先頭のレポートIDバイト分だけ
+  オフセットがずれる——詳細は`PulsarBatteryProvider.cs`のコメント参照)。実機のPulsarワイヤレス
+  ドングルで動作確認済み。**既知の癖**: 同一のvendor/usage page/レポート長を持つHIDコレクションが
+  2つ存在し、片方だけが実際に応答する(もう片方は`ERROR_GEN_FAILURE`で失敗する)。どちらが
+  正しいかは機種や列挙順で変わりうるため、該当する全候補を順番に試す設計にしてある。
+
 ### 既知の制約: 上記以外のベンダー
 
-Pulsar / ZOWIE(BenQ) は、それぞれの純正ドングルで接続している場合、上記のような読み取り可能な
-ローカルAPI/HIDプロトコルの情報が見つからず(調査時点で確認できず)、`WindowsBatteryProvider`
-にも掛からない。これらのデバイスをBluetoothで接続していれば`WindowsBatteryProvider`経由で
-拾える可能性がある。ドングル接続のバッテリーを表示したい場合は、各社ソフトウェアの追加
-リバースエンジニアリングが必要になる(`IBatteryProvider`を実装して`App.xaml.cs`のproviders
-リストに追加すれば統合できる設計)。
+ZOWIE(BenQ) は、純正ドングルで接続している場合、上記のような読み取り可能なローカルAPI/HID
+プロトコルの情報が見つからず(調査時点で確認できず)、`WindowsBatteryProvider`にも掛からない。
+Bluetoothで接続していれば`WindowsBatteryProvider`経由で拾える可能性がある。ドングル接続の
+バッテリーを表示したい場合は、各社ソフトウェアの追加リバースエンジニアリングが必要になる
+(`IBatteryProvider`を実装して`App.xaml.cs`のprovidersリストに追加すれば統合できる設計)。
 
 ## 実行方法
 

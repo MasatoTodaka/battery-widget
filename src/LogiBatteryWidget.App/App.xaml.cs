@@ -6,6 +6,7 @@ using LogiBatteryWidget.App.ViewModels;
 using LogiBatteryWidget.Core;
 using LogiBatteryWidget.Core.Providers;
 using LogiBatteryWidget.Core.Providers.Inzone;
+using LogiBatteryWidget.Core.Providers.Pulsar;
 using LogiBatteryWidget.Core.Providers.Vaxee;
 
 namespace LogiBatteryWidget.App;
@@ -27,6 +28,7 @@ public partial class App : Application
             new WindowsBatteryProvider(),
             new InzoneBatteryProvider(),
             new VaxeeBatteryProvider(),
+            new PulsarBatteryProvider(),
         ];
 
         _monitor = new BatteryMonitorService(providers, TimeSpan.FromSeconds(45));
