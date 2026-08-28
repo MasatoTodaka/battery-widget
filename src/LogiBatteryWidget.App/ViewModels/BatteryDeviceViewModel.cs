@@ -10,6 +10,9 @@ public sealed class BatteryDeviceViewModel(BatteryDevice device)
 
     public int? Percentage { get; } = device.Percentage;
 
+    /// <summary>Non-nullable convenience for bindings that need a plain number (e.g. the ring gauge).</summary>
+    public double RingPercentage => Percentage ?? 0;
+
     public bool IsCharging { get; } = device.IsCharging;
 
     public bool IsUnknown => Percentage is null;
