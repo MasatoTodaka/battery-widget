@@ -25,25 +25,13 @@
         <Style x:Key="CardStyle" TargetType="Border">
             <Setter Property="CornerRadius" Value="20" />
             <Setter Property="Background" Value="#FF1C1C1E" />
-            <Setter Property="Padding" Value="16" />
+            <Setter Property="Padding" Value="16,16,16,10" />
         </Style>
     </Window.Resources>
 
     <Border Style="{StaticResource CardStyle}"
             MouseLeftButtonDown="Card_MouseLeftButtonDown">
         <StackPanel>
-
-            <!-- Header -->
-            <Grid Margin="2,0,2,12">
-                <TextBlock Text="バッテリー" FontSize="13" FontWeight="SemiBold"
-                           Foreground="#FFEBEBF0" />
-                <Button Content="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="12"
-                        HorizontalAlignment="Right" Padding="4"
-                        Background="Transparent" BorderThickness="0"
-                        Foreground="#FFB0B0B5" Cursor="Hand"
-                        Command="{Binding RefreshCommand}"
-                        ToolTip="今すぐ更新" />
-            </Grid>
 
             <!-- Empty state -->
             <TextBlock Text="デバイスが見つかりません&#x0a;G HUBが起動しているか確認してください"
@@ -60,21 +48,14 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="50" />
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
                             <!-- iOS Batteries-widget style ring: muted track + colored progress arc, icon centered inside -->
                             <Grid Grid.Column="0" Width="40" Height="40" Margin="0,0,10,0">
                                 <controls:RingProgress Percentage="{Binding RingPercentage}"
                                                         RingThickness="4.5"
-                                                        TrackBrush="#26FFFFFF">
-                                    <controls:RingProgress.RingBrush>
-                                        <MultiBinding Converter="{StaticResource BatteryFillColorConverter}">
-                                            <Binding Path="Percentage" />
-                                            <Binding Path="IsCharging" />
-                                        </MultiBinding>
-                                    </controls:RingProgress.RingBrush>
-                                </controls:RingProgress>
+                                                        TrackBrush="#26FFFFFF"
+                                                        RingBrush="{Binding Percentage, Converter={StaticResource BatteryFillColorConverter}}" />
                                 <TextBlock Text="{Binding Glyph}" FontFamily="Segoe UI Emoji" FontSize="14"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Grid>
@@ -83,11 +64,7 @@
                                        Foreground="#FFEBEBF0" FontSize="13"
                                        VerticalAlignment="Center"
                                        TextTrimming="CharacterEllipsis"
-                                       Margin="0,0,8,0" />
-
-                            <TextBlock Grid.Column="2" Text="{Binding DpiText}"
-                                       Foreground="#FFB0B0B5" FontSize="12"
-                                       HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                       Margin="0,0,2,0" />
                         </Grid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

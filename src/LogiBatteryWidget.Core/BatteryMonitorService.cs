@@ -13,6 +13,7 @@ public sealed class BatteryMonitorService : IAsyncDisposable
     private readonly IReadOnlyList<IBatteryProvider> _providers;
     private readonly TimeSpan _pollInterval;
     private readonly CancellationTokenSource _cts = new();
+    private readonly SemaphoreSlim _pollLock = new(1, 1);
     private Task? _pollLoop;
 
     public BatteryMonitorService(IReadOnlyList<IBatteryProvider> providers, TimeSpan? pollInterval = null)
@@ -36,8 +37,19 @@ public sealed class BatteryMonitorService : IAsyncDisposable
     /// <summary>Runs one poll immediately, outside the regular interval (e.g. for a manual refresh button).</summary>
     public async Task RefreshNowAsync()
     {
-        var devices = await PollAllProvidersAsync(_cts.Token).ConfigureAwait(false);
-        DevicesUpdated?.Invoke(this, devices);
+        // Mutually excluded with the periodic loop below: without this, a manual refresh landing
+        // mid-cycle raced the loop's own poll, and whichever finished last (sometimes a
+        // slower/partial read) silently overwrote the other's result.
+        await _pollLock.WaitAsync(_cts.Token).ConfigureAwait(false);
+        try
+        {
+            var devices = await PollAllProvidersAsync(_cts.Token).ConfigureAwait(false);
+            DevicesUpdated?.Invoke(this, devices);
+        }
+        finally
+        {
+            _pollLock.Release();
+        }
     }
 
     private async Task RunAsync(CancellationToken cancellationToken)
@@ -45,8 +57,16 @@ public sealed class BatteryMonitorService : IAsyncDisposable
         using var timer = new PeriodicTimer(_pollInterval);
         do
         {
-            var devices = await PollAllProvidersAsync(cancellationToken).ConfigureAwait(false);
-            DevicesUpdated?.Invoke(this, devices);
+            await _pollLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                var devices = await PollAllProvidersAsync(cancellationToken).ConfigureAwait(false);
+                DevicesUpdated?.Invoke(this, devices);
+            }
+            finally
+            {
+                _pollLock.Release();
+            }
         } while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false));
     }
 
@@ -86,5 +106,6 @@ public sealed class BatteryMonitorService : IAsyncDisposable
             }
         }
         _cts.Dispose();
+        _pollLock.Dispose();
     }
 }

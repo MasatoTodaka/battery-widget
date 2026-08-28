@@ -6,6 +6,7 @@ using LogiBatteryWidget.App.ViewModels;
 using LogiBatteryWidget.Core;
 using LogiBatteryWidget.Core.Providers;
 using LogiBatteryWidget.Core.Providers.Inzone;
+using LogiBatteryWidget.Core.Providers.Vaxee;
 
 namespace LogiBatteryWidget.App;
 
@@ -14,8 +15,9 @@ public partial class App : Application
     private BatteryMonitorService? _monitor;
     private TaskbarIcon? _taskbarIcon;
     private MainWindow? _mainWindow;
+    private SettingsWindow? _settingsWindow;
 
-    protected override async void OnStartup(StartupEventArgs e)
+    protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
@@ -24,6 +26,7 @@ public partial class App : Application
             new GHubBatteryProvider(),
             new WindowsBatteryProvider(),
             new InzoneBatteryProvider(),
+            new VaxeeBatteryProvider(),
         ];
 
         _monitor = new BatteryMonitorService(providers, TimeSpan.FromSeconds(45));
@@ -34,8 +37,11 @@ public partial class App : Application
 
         _taskbarIcon = BuildTaskbarIcon(viewModel);
 
+        // Start() already polls immediately (its loop is do/while) before waiting on the timer,
+        // so there's no separate initial RefreshNowAsync() call here - calling both raced two
+        // concurrent polls against the same providers, and whichever finished last (sometimes a
+        // partial/slower read) silently won.
         _monitor.Start();
-        await _monitor.RefreshNowAsync();
     }
 
     private TaskbarIcon BuildTaskbarIcon(MainViewModel viewModel)
@@ -46,12 +52,15 @@ public partial class App : Application
         var refreshItem = new MenuItem { Header = "今すぐ更新" };
         refreshItem.Click += async (_, _) => await viewModel.RefreshCommand.ExecuteAsync(null);
 
+        var settingsItem = new MenuItem { Header = "設定..." };
+        settingsItem.Click += (_, _) => OpenSettings(viewModel);
+
         var exitItem = new MenuItem { Header = "終了" };
         exitItem.Click += (_, _) => Shutdown();
 
         var contextMenu = new ContextMenu
         {
-            ItemsSource = new object[] { toggleVisibilityItem, refreshItem, new Separator(), exitItem },
+            ItemsSource = new object[] { toggleVisibilityItem, refreshItem, settingsItem, new Separator(), exitItem },
         };
 
         var icon = new TaskbarIcon
@@ -63,6 +72,19 @@ public partial class App : Application
         icon.TrayMouseDoubleClick += (_, _) => ToggleWidgetVisibility();
         icon.ForceCreate();
         return icon;
+    }
+
+    private void OpenSettings(MainViewModel viewModel)
+    {
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.Activate();
+            return;
+        }
+
+        _settingsWindow = new SettingsWindow(viewModel);
+        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        _settingsWindow.Show();
     }
 
     private void ToggleWidgetVisibility()

@@ -52,6 +52,8 @@ public partial class MainWindow : Window
             };
         }
 
+        viewModel.PositionChangeRequested += MoveToCorner;
+
         // Not Topmost: any window the user opens or clicks into should cover the widget, like a
         // desktop icon. Windows still raises a window's z-order on click/activation though, so a
         // light periodic nudge back to the bottom is needed to keep it from staying on top after
@@ -89,6 +91,24 @@ public partial class MainWindow : Window
         {
             SetWindowPos(hwnd, HwndBottom, 0, 0, 0, 0, SwpNoMove | SwpNoSize | SwpNoActivate);
         }
+    }
+
+    private void MoveToCorner(WidgetCorner corner)
+    {
+        const double margin = 24;
+        var workArea = SystemParameters.WorkArea;
+
+        (Left, Top) = corner switch
+        {
+            WidgetCorner.TopLeft => (workArea.Left + margin, workArea.Top + margin),
+            WidgetCorner.TopRight => (workArea.Right - Width - margin, workArea.Top + margin),
+            WidgetCorner.BottomLeft => (workArea.Left + margin, workArea.Bottom - ActualHeight - margin),
+            WidgetCorner.BottomRight => (workArea.Right - Width - margin, workArea.Bottom - ActualHeight - margin),
+            _ => (Left, Top),
+        };
+
+        WidgetPositionStore.Save(new WidgetPosition(Left, Top));
+        SendToBottom();
     }
 
     private void Card_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

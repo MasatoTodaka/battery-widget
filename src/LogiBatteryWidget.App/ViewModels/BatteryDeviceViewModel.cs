@@ -2,9 +2,10 @@ using LogiBatteryWidget.Core.Models;
 
 namespace LogiBatteryWidget.App.ViewModels;
 
-public sealed class BatteryDeviceViewModel(BatteryDevice device)
+public sealed class BatteryDeviceViewModel(BatteryDevice device, string? displayNameOverride = null)
 {
-    public string Name { get; } = device.Name;
+    /// <summary>The user's renamed label from the settings window, if they set one; otherwise the raw reported name.</summary>
+    public string Name { get; } = string.IsNullOrWhiteSpace(displayNameOverride) ? device.Name : displayNameOverride;
 
     public string SourceName { get; } = device.Source;
 
@@ -18,11 +19,6 @@ public sealed class BatteryDeviceViewModel(BatteryDevice device)
     public bool IsUnknown => Percentage is null;
 
     public string PercentageText => Percentage is { } value ? $"{value}%" : "--";
-
-    public int? Dpi { get; } = device.Dpi;
-
-    /// <summary>Empty for non-mouse devices, or mice G HUB didn't report a DPI for.</summary>
-    public string DpiText => Dpi is { } dpi ? $"{dpi} DPI" : string.Empty;
 
     public string Glyph => device.Kind switch
     {
